@@ -159,13 +159,13 @@ void FerNNClassifier::trainNN(const vector<cv::Mat>& nn_examples){
   printf("%d. Trained NN examples: %d positive %d negative\n",acum,(int)pEx.size(),(int)nEx.size());
 }                                                                  //  end
 
-
+/*Inputs: 
+   * -NN Patch 
+   * Outputs: 
+   * -Relative Similarity (rsconf)相关相似度, Conservative Similarity (csconf)保守相似度, 
+   * In pos. set|Id pos set|In neg. set (isin) 
+   */  
 void FerNNClassifier::NNConf(const Mat& example, vector<int>& isin,float& rsconf,float& csconf){
-  /*Inputs:
-   * -NN Patch
-   * Outputs:
-   * -Relative Similarity (rsconf), Conservative Similarity (csconf), In pos. set|Id pos set|In neg. set (isin)
-   */
   isin=vector<int>(3,-1);
   if (pEx.empty()){ //if isempty(tld.pex) % IF positive examples in the model are not defined THEN everything is negative
       rsconf = 0; //    conf1 = zeros(1,size(x,2));
@@ -183,18 +183,21 @@ void FerNNClassifier::NNConf(const Mat& example, vector<int>& isin,float& rsconf
   int maxPidx,validatedPart = ceil(pEx.size()*valid);
   float nccN, maxN=0;
   bool anyN=false;
+   //比较图像片p到在线模型M的距离（相似度），计算正样本最近邻相似度，也就是将输入的图像片与  
+  //在线模型中所有的图像片进行匹配，找出最相似的那个图像片，也就是相似度的最大值  
   for (int i=0;i<pEx.size();i++){
       matchTemplate(pEx[i],example,ncc,CV_TM_CCORR_NORMED);      // measure NCC to positive examples
       nccP=(((float*)ncc.data)[0]+1)*0.5;
-      if (nccP>ncc_thesame)
+      if (nccP>ncc_thesame) // ncc_thesame = 0.95
         anyP=true;
       if(nccP > maxP){
-          maxP=nccP;
+          maxP=nccP;	//记录最大的相似度以及对应的图像片index索引值 
           maxPidx = i;
           if(i<validatedPart)
             csmaxP=maxP;
       }
   }
+  //计算负样本最近邻相似度
   for (int i=0;i<nEx.size();i++){
       matchTemplate(nEx[i],example,ncc,CV_TM_CCORR_NORMED);     //measure NCC to negative examples
       nccN=(((float*)ncc.data)[0]+1)*0.5;
@@ -203,7 +206,7 @@ void FerNNClassifier::NNConf(const Mat& example, vector<int>& isin,float& rsconf
       if(nccN > maxN)
         maxN=nccN;
   }
-  //set isin
+  //set isin 看看找到的是正样本还是负样本;
   if (anyP) isin[0]=1;  //if he query patch is highly correlated with any positive patch in the model then it is considered to be one of them
   isin[1]=maxPidx;      //get the index of the maximall correlated positive patch
   if (anyN) isin[2]=1;  //if  the query patch is highly correlated with any negative patch in the model then it is considered to be one of them

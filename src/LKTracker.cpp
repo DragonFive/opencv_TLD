@@ -79,19 +79,20 @@ void LKTracker::normCrossCorrelation(const Mat& img1,const Mat& img2, vector<Poi
                 }
         }
         rec0.release();
-        rec1.release();
+        rec1.release(); 
         res.release();
 }
 
-
+//筛选出 FB_error[i] <= median(FB_error) 和 sim_error[i] > median(sim_error) 的特征点  
+//得到NCC和FB error结果的中值，分别去掉中值一半的跟踪结果不好的点  
 bool LKTracker::filterPts(vector<Point2f>& points1,vector<Point2f>& points2){
   //Get Error Medians
-  simmed = median(similarity);
-  size_t i, k;
+  simmed = median(similarity);			//找到相似度的中值;
+  size_t i, k;						
   for( i=k = 0; i<points2.size(); ++i ){
         if( !status[i])
           continue;
-        if(similarity[i]> simmed){
+        if(similarity[i]> simmed){		//剩下 similarity[i]> simmed 的特征点  
           points1[k] = points1[i];
           points2[k] = points2[i];
           FB_error[k] = FB_error[i];
@@ -103,7 +104,7 @@ bool LKTracker::filterPts(vector<Point2f>& points1,vector<Point2f>& points2){
   points1.resize(k);
   points2.resize(k);
   FB_error.resize(k);
-
+//再对上一步剩下的特征点进一步筛选，剩下 FB_error[i] <= fbmed 的特征点   但这里没有筛选FB_error
   fbmed = median(FB_error);
   for( i=k = 0; i<points2.size(); ++i ){
       if( !status[i])
@@ -116,7 +117,7 @@ bool LKTracker::filterPts(vector<Point2f>& points1,vector<Point2f>& points2){
   }
   points1.resize(k);
   points2.resize(k);
-  if (k>0)
+  if (k>0) //表示如果能有点通过测试 那么就跟踪对了；
     return true;
   else
     return false;

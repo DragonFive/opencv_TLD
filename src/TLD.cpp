@@ -447,7 +447,11 @@ void TLD::track(const Mat& img1, const Mat& img2,vector<Point2f>& points1,vector
   tracked = tracker.trackf2f(img1,img2,points,points2);
   if (tracked){
       //Bounding box prediction
+	  //利用剩下的这不到一半的跟踪点输入来预测bounding box在当前帧的位置和大小 tbb  
       bbPredict(points,points2,lastbox,tbb);
+	  //跟踪失败检测：如果FB error的中值大于10个像素值（经验值），或者预测到的当前box的位置移出图像，则  
+      //认为跟踪错误，此时不返回bounding box；Rect::br()返回的是右下角的坐标  
+      //getFB()返回的是FB error的中值  
       if (tracker.getFB()>10 || tbb.x>img2.cols ||  tbb.y>img2.rows || tbb.br().x < 1 || tbb.br().y <1){
           tvalid =false; //too unstable prediction or bounding box out of image
           tracked = false;
@@ -455,6 +459,7 @@ void TLD::track(const Mat& img1, const Mat& img2,vector<Point2f>& points1,vector
           return;
       }
       //Estimate Confidence and Validity
+	  //评估跟踪确信度和有效性
       Mat pattern;
       Scalar mean, stdev;
       BoundingBox bb;
@@ -462,9 +467,11 @@ void TLD::track(const Mat& img1, const Mat& img2,vector<Point2f>& points1,vector
       bb.y = max(tbb.y,0);
       bb.width = min(min(img2.cols-tbb.x,tbb.width),min(tbb.width,tbb.br().x));
       bb.height = min(min(img2.rows-tbb.y,tbb.height),min(tbb.height,tbb.br().y));
-      getPattern(img2(bb),pattern,mean,stdev);
+      //把patch归一化到patternpattern里面；
+	  getPattern(img2(bb),patternpattern,mean,stdev);
       vector<int> isin;
       float dummy;
+	  //计算图像片pattern到在线模型M的保守相似度  
       classifier.NNConf(pattern,isin,dummy,tconf); //Conservative Similarity
       tvalid = lastvalid;
       if (tconf>classifier.thr_nn_valid){
