@@ -538,26 +538,31 @@ void TLD::detect(const cv::Mat& frame){
   dbb.clear();
   dconf.clear();
   dt.bb.clear();
+  //GetTickCount返回从操作系统启动到现在所经过的时间  
   double t = (double)getTickCount();
   Mat img(frame.rows,frame.cols,CV_8U);
-  integral(frame,iisum,iisqsum);
-  GaussianBlur(frame,img,Size(9,9),1.5);
+  integral(frame,iisum,iisqsum);	//计算frame的积分图;
+  GaussianBlur(frame,img,Size(9,9),1.5);//高斯模糊，去噪？
   int numtrees = classifier.getNumStructs();
-  float fern_th = classifier.getFernTh();
+  float fern_th = classifier.getFernTh();//集合分类器的分类阈值;
   vector <int> ferns(10);
   float conf;
   int a=0;
   Mat patch;
+  //级联分类器模块一：方差检测模块，利用积分图计算每个待检测窗口的方差，
+  //方差大于var阈值（目标patch方差的50%）的则认为其含有前景目标
   for (int i=0;i<grid.size();i++){//FIXME: BottleNeck
-      if (getVar(grid[i],iisum,iisqsum)>=var){
+      if (getVar(grid[i],iisum,iisqsum)>=var){// //计算每一个扫描窗口的方差 使用阈值判断法;
           a++;
+		  //级联分类器模块二：集合分类器检测模块 
 		  patch = img(grid[i]);
           classifier.getFeatures(patch,grid[i].sidx,ferns);
           conf = classifier.measure_forest(ferns);
           tmp.conf[i]=conf;
           tmp.patt[i]=ferns;
+		  //如果集合分类器的后验概率的平均值大于阈值fern_th（由训练得到），就认为含有前景目标  
           if (conf>numtrees*fern_th){
-              dt.bb.push_back(i);
+              dt.bb.push_back(i);////将通过以上两个检测模块的扫描窗口记录在detect structure中
           }
       }
       else
@@ -566,6 +571,7 @@ void TLD::detect(const cv::Mat& frame){
   int detections = dt.bb.size();
   printf("%d Bounding boxes passed the variance filter\n",a);
   printf("%d Initial detection from Fern Classifier\n",detections);
+   //如果通过以上两个检测模块的扫描窗口数大于100个，则只取后验概率大的前100个 
   if (detections>100){
       nth_element(dt.bb.begin(),dt.bb.begin()+100,dt.bb.end(),CComparator(tmp.conf));
       dt.bb.resize(100);
