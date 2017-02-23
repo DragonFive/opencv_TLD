@@ -349,21 +349,27 @@ void TLD::processFrame(const cv::Mat& img1,const cv::Mat& img2,vector<Point2f>& 
   }
   ///Detect
   detect(img2);
-  ///Integration
+  
+
+  ///Integration   综合模块  
+  //TLD只跟踪单目标，所以综合模块综合跟踪器跟踪到的单个目标和检测器检测到的多个目标，然后只输出保守相似度最大的一个目标  
   if (tracked){
-      bbnext=tbb;
-      lastconf=tconf;
-      lastvalid=tvalid;
+      bbnext=tbb;			//表示track到的boundingbox
+      lastconf=tconf;		//表示track到的置信度
+      lastvalid=tvalid;		//表示track的有效性
       printf("Tracked\n");
       if(detected){                                               //   if Detected
+          //通过 重叠度 对检测器检测到的目标bounding box进行聚类，每个类其重叠度小于0.5  
           clusterConf(dbb,dconf,cbb,cconf);                       //   cluster detections
           printf("Found %d clusters\n",(int)cbb.size());
           for (int i=0;i<cbb.size();i++){
+			  //找到与跟踪器跟踪到的box距离比较远的类（检测器检测到的box），而且它的相关相似度比跟踪器的要大  
               if (bbOverlap(tbb,cbb[i])<0.5 && cconf[i]>tconf){  //  Get index of a clusters that is far from tracker and are more confident than the tracker
-                  confident_detections++;
+                  confident_detections++;   //记录满足上述条件，也就是可信度比较高的目标box的个数;
                   didx=i; //detection index
               }
           }
+		  //如果只有一个满足上述条件的box，那么就用这个目标box来重新初始化跟踪器（也就是用检测器的结果去纠正跟踪器）
           if (confident_detections==1){                                //if there is ONE such a cluster, re-initialize the tracker
               printf("Found a better match..reinitializing tracking\n");
               bbnext=cbb[didx];
@@ -385,6 +391,8 @@ void TLD::processFrame(const cv::Mat& img1,const cv::Mat& img2,vector<Point2f>& 
                   }
               }
               if (close_detections>0){
+				  //对与跟踪器预测到的box距离很近的box 和 跟踪器本身预测到的box 进行坐标与大小的平均作为最终的  
+                  //目标bounding box，但是跟踪器的权值较大  
                   bbnext.x = cvRound((float)(10*tbb.x+cx)/(float)(10+close_detections));   // weighted average trackers trajectory with the close detections
                   bbnext.y = cvRound((float)(10*tbb.y+cy)/(float)(10+close_detections));
                   bbnext.width = cvRound((float)(10*tbb.width+cw)/(float)(10+close_detections));
