@@ -868,7 +868,7 @@ int TLD::clusterBB(const vector<BoundingBox>& dbb,vector<int>& indexes){
  return 1;
 
 }
-
+//检测的结果太多，所以要进行非极大值抑制，这里是用cluster的方法，时间消耗应该不少吧？？
 void TLD::clusterConf(const vector<BoundingBox>& dbb,const vector<float>& dconf,vector<BoundingBox>& cbb,vector<float>& cconf){
   int numbb =dbb.size();
   vector<int> T;
@@ -889,7 +889,12 @@ void TLD::clusterConf(const vector<BoundingBox>& dbb,const vector<float>& dconf,
     break;
   default:
     T = vector<int>(numbb,0);
-    c = partition(dbb,T,(*bbcomp));
+	    //stable_partition()重新排列元素，使得满足指定条件的元素排在不满足条件的元素前面。它维持着两组元素的顺序关系。  
+    //STL partition就是把一个区间中的元素按照某个条件分成两类。返回第二类子集的起点  
+    //bbcomp()函数判断两个box的重叠度小于0.5，返回false，否则返回true （分界点是重叠度：0.5）  
+    //partition() 将dbb划分为两个子集，将满足两个box的重叠度小于0.5的元素移动到序列的前面，为一个子集，重叠度大于0.5的，  
+    //放在序列后面，为第二个子集，但两个子集的大小不知道，返回第二类子集的起点 
+    c = partition(dbb,T,(*bbcomp));////重叠度小于0.5的box，属于不同的类，所以c是不同的类别个数 
     //c = clusterBB(dbb,T);
     break;
   }
