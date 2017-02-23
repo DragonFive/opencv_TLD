@@ -599,12 +599,15 @@ void TLD::detect(const cv::Mat& frame){
   float nn_th = classifier.getNNTh();
   for (int i=0;i<detections;i++){                                         //  for every remaining detection
       idx=dt.bb[i];                                                       //  Get the detected bounding box index
+	  // 获得图像patch
 	  patch = frame(grid[idx]);
       getPattern(patch,dt.patch[i],mean,stdev);                //  Get pattern within bounding box
-      classifier.NNConf(dt.patch[i],dt.isin[i],dt.conf1[i],dt.conf2[i]);  //  Evaluate nearest neighbour classifier
+      // 计算图像片patch到在线模型M的相关相似度和保守相似度;
+	  classifier.NNConf(dt.patch[i],dt.isin[i],dt.conf1[i],dt.conf2[i]);  //  Evaluate nearest neighbour classifier
       dt.patt[i]=tmp.patt[idx];
       //printf("Testing feature %d, conf:%f isin:(%d|%d|%d)\n",i,dt.conf1[i],dt.isin[i][0],dt.isin[i][1],dt.isin[i][2]);
-      if (dt.conf1[i]>nn_th){                                               //  idx = dt.conf1 > tld.model.thr_nn; % get all indexes that made it through the nearest neighbour
+      //相关相似度大于阈值，则认为含有前景目标 
+	  if (dt.conf1[i]>nn_th){                                               //  idx = dt.conf1 > tld.model.thr_nn; % get all indexes that made it through the nearest neighbour
           dbb.push_back(grid[idx]);                                         //  BB    = dt.bb(:,idx); % bounding boxes
           dconf.push_back(dt.conf2[i]);                                     //  Conf  = dt.conf2(:,idx); % conservative confidences
       }
