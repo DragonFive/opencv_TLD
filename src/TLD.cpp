@@ -238,10 +238,10 @@ void TLD::generatePositiveData(const Mat& frame, int num_warps){
     pX.reserve(num_warps*good_boxes.size());//先扩大存储能力；
   int idx;
   for (int i=0;i<num_warps;i++){	//产生20个图像元patch
-     if (i>0)
+	if (i>0)
 		 //PatchGenerator类用来对图像区域进行仿射变换，先RNG一个随机因子，再调用（）运算符产生一个变换后的正样本保存到warped。  
-       generator(frame,pt,warped,bbhull.size(),rng); //为什么呢;
-       for (int b=0;b<good_boxes.size();b++){
+		 generator(frame,pt,warped,bbhull.size(),rng); //为什么呢;
+    for (int b=0;b<good_boxes.size();b++){
          idx=good_boxes[b];
 		 patch = img(grid[idx]);
 		 ////getFeatures函数得到输入的patch的用于树的节点，也就是特征组的特征fern（13位的二进制代码） 
@@ -635,7 +635,8 @@ void TLD::evaluate(){
 
 void TLD::learn(const Mat& img){
   printf("[Learning] ");
-  ///Check consistency
+  ///Check consistency 检测一致性
+  //先获得合格的boundingbox
   BoundingBox bb;
   bb.x = max(lastbox.x,0);
   bb.y = max(lastbox.y,0);
@@ -647,31 +648,34 @@ void TLD::learn(const Mat& img){
   vector<int> isin;
   float dummy, conf;
   classifier.NNConf(pattern,isin,conf,dummy);
-  if (conf<0.5) {
+  if (conf<0.5) {// 如果相似度太小了，就不训练  通不过第三个最近邻分类器
       printf("Fast change..not training\n");
       lastvalid =false;
       return;
   }
-  if (pow(stdev.val[0],2)<var){
+  if (pow(stdev.val[0],2)<var){//如果方差太小了，也不训练   通不过方差检测器
       printf("Low variance..not training\n");
       lastvalid=false;
       return;
   }
-  if(isin[2]==1){
+  if(isin[2]==1){ //如果被被识别为负样本，也不训练     通不过第二个组合分类器 
       printf("Patch in negative data..not traing");
       lastvalid=false;
       return;
   }
-/// Data generation
+/// Data generation 样本产生
   for (int i=0;i<grid.size();i++){
       grid[i].overlap = bbOverlap(lastbox,grid[i]);
   }
   vector<pair<vector<int>,int> > fern_examples;
   good_boxes.clear();
   bad_boxes.clear();
+  //此函数根据传入的lastbox，在整帧图像中的全部窗口中寻找与该lastbox距离最小（即最相似，  
+  //重叠度最大）的num_closest_update个窗口，然后把这些窗口 归入good_boxes容器（只是把网格数组的索引存入）  
+  //同时，把重叠度小于0.2的，归入 bad_boxes 容器  
   getOverlappingBoxes(lastbox,num_closest_update);
   if (good_boxes.size()>0)
-    generatePositiveData(img,num_warps_update);
+    generatePositiveData(img,num_warps_update);  //用仿射模型产生正样本（类似于第一帧的方法，但只产生10*10=100个）  
   else{
     lastvalid = false;
     printf("No good boxes..Not training");
