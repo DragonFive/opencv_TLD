@@ -894,7 +894,7 @@ void TLD::clusterConf(const vector<BoundingBox>& dbb,const vector<float>& dconf,
     //bbcomp()函数判断两个box的重叠度小于0.5，返回false，否则返回true （分界点是重叠度：0.5）  
     //partition() 将dbb划分为两个子集，将满足两个box的重叠度小于0.5的元素移动到序列的前面，为一个子集，重叠度大于0.5的，  
     //放在序列后面，为第二个子集，但两个子集的大小不知道，返回第二类子集的起点 
-    c = partition(dbb,T,(*bbcomp));////重叠度小于0.5的box，属于不同的类，所以c是不同的类别个数 
+    c = partition(dbb,T,(*bbcomp));////重叠度小于0.5的box，属于不同的类，所以c是不同的类别个数 ?
     //c = clusterBB(dbb,T);
     break;
   }
@@ -902,11 +902,11 @@ void TLD::clusterConf(const vector<BoundingBox>& dbb,const vector<float>& dconf,
   cbb=vector<BoundingBox>(c);
   printf("Cluster indexes: ");
   BoundingBox bx;
-  for (int i=0;i<c;i++){
+  for (int i=0;i<c;i++){//类别个数
       float cnf=0;
       int N=0,mx=0,my=0,mw=0,mh=0;
-      for (int j=0;j<T.size();j++){
-          if (T[j]==i){
+      for (int j=0;j<T.size();j++){////检测到的bounding box个数 
+          if (T[j]==i){				////将聚类为同一个类别的box的坐标和大小进行累加 
               printf("%d ",i);
               cnf=cnf+dconf[j];
               mx=mx+dbb[j].x;
