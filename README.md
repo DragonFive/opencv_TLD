@@ -43,13 +43,21 @@ TLD使用作者自己提出的**Median-Flow光流**追踪算法，采用的是**
 
 作者假设一个“好”的追踪算法应该具有**正反向连续性**（forward-backward consistency），即无论是按照时间上的正序追踪还是反序追踪，产生的轨迹应该是一样的。作者根据这个性质规定了任意一个追踪器的**FB误差（forward-backward error）**：从时间t的初始位置x(t)开始追踪产生时间t+p的位置x(t+p)，再从位置x(t+p)反向追踪产生时间t的预测位置x`(t)，**初始位置和预测位置之间的欧氏距离**就作为追踪器在t时间的FB误差。
 
-![](http://johnhany.net/wp-content/uploads/2014/05/fb-error.png)
+![](http://images.cnitblog.com/blog/460184/201501/271556017069891.png)
 
 ## 跟踪点的选择 
 
+前面提到TLD跟踪的不是关键点，它跟踪的是更简单的点：能稳定存在的点，那哪些点是稳定的呢？Median-Flow tracker的基本思想是，看反向跟踪后的残差，用所有点的残差中值作为稳定点的筛选条件。如上图中的黄色点就因为残差太大，被pass掉了，既然稳定点是可以筛选出来的，那么就不必煞费苦心的寻找那些关键点，可以直接将所有的点都作为初始跟踪点，好吧所，有的点毕竟还是太多了，于是作者是选取网格交叉点作为初始跟踪点（见下图框框中黄色的点点）。
+
+
+
+
+
 在上一帧t的物体包围框里均匀地产生一些点，然后用Lucas-Kanade追踪器**正向**追踪这些**点**到t+1帧，再**反向**追踪到t帧，计算FB误差，筛选出FB误差最小的**一半点**作为最佳追踪点。最后根据这些点的坐标变化和距离的变化计算t+1帧**包围框的位置和大小**（**平移的尺度取中值，缩放的尺度取中值**。取中值的光流法，估计这也是名称Median-Flow的由来吧）
 
-![](http://johnhany.net/wp-content/uploads/2014/05/tracking-points.png)
+
+
+![](http://images.cnitblog.com/blog/460184/201501/271556035971735.png)
 
 可以用NCC（Normalized Cross Correlation，归一化互相关）和SSD（Sum-of-Squared Differences，差值平方和）作为筛选追踪点的衡量标准。(都是越小越好)
 
@@ -259,7 +267,8 @@ processFrame(last_gray, current_gray, pts1, pts2, pbox, status, tl, bb_file);
 
 http://docs.opencv.org/3.1.0/dc/d6b/group__video__track.html#ga473e4b886d0bcc6b65831eb88ed93323
 
-
+## 其中normCrossCorrelation
+其中normCrossCorrelation(img1,img2,points1,points2)是对光流法跟踪的结果不放心，因此希望通过对比前后两点周围的小块的相似性，来进一步去掉不稳定的点。这次的相似性不是相关系数，而是normalized cross-correlation (NCC)：
 
 ### 模板匹配 matchTemplate
 
