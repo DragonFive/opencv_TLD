@@ -2,9 +2,9 @@
 using namespace cv;
 
 LKTracker::LKTracker(){
-  term_criteria = TermCriteria( TermCriteria::COUNT+TermCriteria::EPS, 20, 0.03);
-  window_size = Size(4,4);
-  level = 5;
+  term_criteria = TermCriteria( TermCriteria::COUNT+TermCriteria::EPS, 20, 0.03);//迭代终止条件
+  window_size = Size(4,4);  //窗口尺寸
+  level = 5;				//用于设置构建的图像金字塔的栈的层数，若设置为0，则不使用金字塔。
   lambda = 0.5;
 }
 
@@ -38,7 +38,7 @@ CV_LKFLOW_INITIAL_GUESSES , 在调用之前，数组 B 包含特征的初始坐�
   //输出： status 是bool数组 表示当前的特征点有没有被找到 similarity  表示移动点之间的差值,如果是NULL表示没有匹配上
 //http://docs.opencv.org/3.1.0/dc/d6b/group__video__track.html#ga473e4b886d0bcc6b65831eb88ed93323  
 
-	// forward trajectory  前向轨迹跟踪
+	// forward trajectory  前向轨迹跟踪   status数组保存的是哪些点呗成功跟踪。
   calcOpticalFlowPyrLK( img1,img2, points1, points2, status,similarity, window_size, level, term_criteria, lambda, 0);
 	// backward trajectory 后向轨迹跟踪
   calcOpticalFlowPyrLK( img2,img1, points2, pointsFB, FB_status,FB_error, window_size, level, term_criteria, lambda, 0);
