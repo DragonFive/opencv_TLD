@@ -140,7 +140,7 @@ void FerNNClassifier::trainNN(const vector<cv::Mat>& nn_examples){
   vector<int> y(nn_examples.size(),0);
   y[0]=1;		//0号是正样本;
   vector<int> isin;				
-  for (int i=0;i<nn_examples.size();i++){    //  For each example
+  for (int i=0;i<nn_examples.size();i++){    //  For each example   //修正分错的样本;
       //计算输入图像片与在线模型之间的相关相似度conf  
 	  NNConf(nn_examples[i],isin,conf,dummy);                      //  Measure Relative similarity
       if (y[i]==1 && conf<=thr_nn){                                //    if y(i) == 1 && conf1 <= tld.model.thr_nn % 0.65
